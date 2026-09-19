@@ -34,6 +34,8 @@ The API binds to 127.0.0.1:5000. Start the frontend at its Vite-configured port.
 
 External AI is off by default. Enabling `ENABLE_EXTERNAL_AI=true` with a Gemini key permits dataset schema and analytical questions to be sent to that provider; use only approved demonstration data. Uploads persist locally in `backend/uploads` until removed. There is no production authentication or tenant isolation: the login UI is a demo and prompts do not enforce security. Do not expose the local prototype as a shared service.
 
+The optional Gemini integration uses a deprecated SDK and has not been externally validated. Keep it disabled until migrated and tested against a supported provider configuration. The deterministic charts and structured analytical operations work without it.
+
 Category counts and means use the full dataset; histograms and scatter plots use the first 100 rows. Chart metadata and captions disclose this scope. The full-data endpoint caps its output at 10,000 rows, and Explorer caps at 50,000. Sampled charts are exploratory and may differ from full-dataset summaries. Chart cross-filter behavior and all failure modes need browser validation; do not claim production readiness.
 
 ## Architecture and skills
