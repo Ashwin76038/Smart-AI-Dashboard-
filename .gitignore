@@ -37,3 +37,12 @@ backend/output.txt
 backend/output_8081.txt
 backend/models.txt
 backend/models_list.txt
+
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+backend/uploads/
+*.log
+.venv/

@@ -90,9 +90,8 @@ const GraphicWalkerViz: React.FC<GraphicWalkerVizProps> = ({ filename }) => {
             <ErrorBoundary>
                 <GraphicWalker
                     key={filename}
-                    data={data}
-                    fields={fields} // explicitly provide fields
-                    hideDataSourceConfig={false}
+                    dataSource={data}
+                    rawFields={fields} // explicitly provide fields
                 />
             </ErrorBoundary>
         </div>

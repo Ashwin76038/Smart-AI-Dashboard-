@@ -1,73 +1,43 @@
-# Welcome to your Lovable project
+# Smart Data Analysis Dashboard
 
-## Project info
+A local analytics prototype for uploading tabular data, profiling fields and exploring charts.
 
-**URL**: https://lovable.dev/projects/1a84ead9-ab4a-40d9-92a9-76e41471fae2
+## Business problem
 
-## How can I edit this code?
+Initial dataset exploration is repetitive: analysts need to inspect missing values, understand field types and choose suitable visualizations before drawing conclusions. This project combines those steps in a React interface and Flask API.
 
-There are several ways of editing your application.
+## Implemented workflow
 
-**Use Lovable**
+Upload CSV/XLSX/JSON -> validate file and shape -> normalize column names -> profile missingness and distributions -> recommend charts -> render Vega-Lite and Graphic Walker views.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1a84ead9-ab4a-40d9-92a9-76e41471fae2) and start prompting.
+Chart selection and captions are deterministic. Gemini is optional for translating analytical questions into a validated operation plan. Active chart rules cover category counts, numeric distributions, scatter plots and category means. These rules select charts; they do not prove business insights.
 
-Changes made via Lovable will be committed automatically to this repo.
+Uploads are limited to 10 MB, 50,000 rows and 200 columns. Uploaded names are replaced with random server identifiers; prepared data is always stored as CSV. Duplicate observations and missing values are preserved and reported because automatic removal/imputation can bias business results.
 
-**Use your preferred IDE**
+## Analytical queries
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The API executes only validated `count`, `preview`, `sum`, `mean`, `min` and `max` operations, optionally grouped by an existing column. Generated Python is never executed. Offline chat supports `count rows` and `preview`; other questions require a structured plan or optional model translation. Results are limited to 20 rows with the full result-row count disclosed.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Local setup
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm ci
 npm run dev
+python -m pip install -r backend/requirements.txt
+cd backend
+python app.py
 ```
 
-**Edit a file directly in GitHub**
+The API binds to 127.0.0.1:5000. Start the frontend at its Vite-configured port. Copy `backend/.env.example` to `backend/.env` only if configuring optional model access.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Data privacy and limitations
 
-**Use GitHub Codespaces**
+External AI is off by default. Enabling `ENABLE_EXTERNAL_AI=true` with a Gemini key permits dataset schema and analytical questions to be sent to that provider; use only approved demonstration data. Uploads persist locally in `backend/uploads` until removed. There is no production authentication or tenant isolation: the login UI is a demo and prompts do not enforce security. Do not expose the local prototype as a shared service.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Category counts and means use the full dataset; histograms and scatter plots use the first 100 rows. Chart metadata and captions disclose this scope. The full-data endpoint caps its output at 10,000 rows, and Explorer caps at 50,000. Sampled charts are exploratory and may differ from full-dataset summaries. Chart cross-filter behavior and all failure modes need browser validation; do not claim production readiness.
 
-## What technologies are used for this project?
+## Architecture and skills
 
-This project is built with:
+`backend/app.py`: routes, upload handling, deterministic charts and optional query translation. `backend/cleaning.py`: conservative data preparation. `backend/safe_query.py`: closed analytical operation set. `backend/services/`: field profiling/recommendation components. `src/`: React/TypeScript views, filters and Vega rendering.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/1a84ead9-ab4a-40d9-92a9-76e41471fae2) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Skills: Python, pandas, data profiling, API design, TypeScript and visualization specification. Tests run with `python -m unittest discover -s tests -v`; frontend compilation uses `npm run build`.
