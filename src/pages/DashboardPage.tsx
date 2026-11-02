@@ -67,7 +67,7 @@ const DashboardPage = () => {
       return await fn();
     } catch (error) {
       if (retries <= 0) throw error;
-      toast.info(`AI Service busy. Retrying... (${retries} attempts left)`);
+      toast.info(`Chart service busy. Retrying... (${retries} attempts left)`);
       await new Promise((resolve) => setTimeout(resolve, delay));
       return fetchWithRetry(fn, retries - 1, delay * 1.5);
     }
@@ -92,16 +92,16 @@ const DashboardPage = () => {
         setAiChartSpecs(response.data.specs || []);
 
         if (response.data.story && response.data.story.length > 0) {
-          toast.success("AI Story Generated Successfully! 📖");
+          toast.success("Dataset views generated");
         } else {
-          toast.info("Generated Heuristic Insights (AI Story Unavailable)");
+          toast.info("Generated exploratory views");
         }
       } else {
         throw new Error(response.data.error || "Unknown error");
       }
     } catch (error: any) {
       console.error("Failed to generate story:", error);
-      toast.error("AI Service failed. Showing manual tools.");
+      toast.error("Chart generation failed. Manual tools remain available.");
     } finally {
       setIsGeneratingChart(false);
     }
@@ -151,7 +151,7 @@ const DashboardPage = () => {
               }`}
           >
             <Sparkles className="w-4 h-4" />
-            AI Story
+            Chart notes
           </button>
           <button
             onClick={() => setViewMode("explore")}
@@ -191,7 +191,7 @@ const DashboardPage = () => {
           <AutomatedDashboard summary={summary} preview={preview} />
         )}
 
-        {/* MODE 2: AI Storytelling (Vega-Lite) */}
+        {/* MODE 2: Chart notestelling (Vega-Lite) */}
         {viewMode === "story" && (
           <Card className="min-h-[600px] p-6 bg-white/80 backdrop-blur-md border border-purple-100 shadow-xl rounded-2xl relative overflow-hidden">
             {/* Background Decor */}
@@ -202,9 +202,9 @@ const DashboardPage = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                     <Sparkles className="w-6 h-6 text-purple-600" />
-                    AI Narrative Engine
+                    Dataset exploration
                   </h2>
-                  <p className="text-gray-500">Deep dive analysis powered by Gemini 2.0</p>
+                  <p className="text-gray-500">Deterministic charts with explicit data coverage</p>
                 </div>
                 <Button
                   onClick={handleGenerateStory}
@@ -244,8 +244,8 @@ const DashboardPage = () => {
                   {isGeneratingChart ? (
                     <div className="text-center">
                       <Loader2 className="w-12 h-12 animate-spin text-purple-400 mx-auto mb-4" />
-                      <p className="text-lg font-medium text-gray-600">Weaving your data story...</p>
-                      <p className="text-sm">This involves complex reasoning, please wait.</p>
+                      <p className="text-lg font-medium text-gray-600">Preparing dataset views...</p>
+                      <p className="text-sm">Computing summaries and chart specifications.</p>
                     </div>
                   ) : (
                     <div className="text-center">
