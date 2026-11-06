@@ -1,3 +1,4 @@
+import { finitePairs } from '@/lib/previewData.mjs';
 import React from "react";
 import {
     BarChart,
@@ -60,7 +61,7 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
     // 1. Bar Chart Data (Top 5 of first Category)
     const primaryCat = categorical_columns[0];
     const secondaryCat = categorical_columns[1];
-    const tertiaryCat = categorical_columns[2] || categorical_columns[0]; // Fallback
+    const tertiaryCat = categorical_columns[2];
 
     const barData = primaryCat
         ? Object.entries(categorical_distribution[primaryCat] || {}).slice(0, 10).map(([name, value]) => ({
@@ -75,7 +76,7 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
     // 3. Line/Area Chart Data (Time series or Index based)
     const primaryDate = date_columns[0];
     const primaryNum = numeric_columns[0];
-    const secondaryNum = numeric_columns[1] || numeric_columns[0]; // Fallback
+    const secondaryNum = numeric_columns[1];
 
     const trendData = preview.map((row, index) => ({
         index: index + 1,
@@ -84,25 +85,8 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
         [secondaryNum]: secondaryNum ? (typeof row[secondaryNum] === 'number' ? row[secondaryNum] : parseFloat(row[secondaryNum])) : 0,
     }));
 
-    // 4. Scatter Data (Num 1 vs Num 2)
-    const scatterData = (primaryNum) ? preview.map((row, i) => ({
-        x: typeof row[primaryNum] === 'number' ? row[primaryNum] : parseFloat(row[primaryNum]) || 0,
-        y: typeof row[secondaryNum] === 'number' ? row[secondaryNum] : parseFloat(row[secondaryNum]) || 0, // safe fallback to same metric if only 1 exists
-        z: 1
-    })) : [];
-
-    // 5. Radar Data (Enhanced with Synthetic Metrics if needed)
-    let radarData = numeric_columns.slice(0, 6).map((col: string) => ({
-        subject: col,
-        A: numeric_statistics[col]?.mean || 0,
-        fullMark: numeric_statistics[col]?.max || 100
-    }));
-
-    // If we have fewer than 3 numeric columns, add some synthetic structural metrics for the radar to look good
-    if (radarData.length < 3) {
-        radarData.push({ subject: "Col Count", A: total_columns, fullMark: 20 });
-        radarData.push({ subject: "Log(Rows)", A: Math.log10(total_rows), fullMark: 10 });
-    }
+    // Only observed finite numeric pairs; absent measurements are not zero.
+    const scatterData = finitePairs(preview, primaryNum, secondaryNum);
 
     // 6. Horizontal Bar for Secondary Category
     const horizBarData = secondaryCat
@@ -111,7 +95,7 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
             value,
             fill: COLORS[Math.floor(Math.random() * COLORS.length)]
         }))
-        : [{ name: "N/A", value: 0 }];
+        : [];
 
     // 8. Radial Bar Data (Tertiary Category Count)
     const radialData = tertiaryCat
@@ -200,15 +184,15 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
 
             {/* ---------------- 2. Visualization Grid ---------------- */}
             <h2 className="text-xl font-bold text-gray-800 mb-4 px-2 border-l-4 border-indigo-500">
-                Data Visualizations (Updated)
+                Dataset views
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 {/* Chart 1: Bar Chart (Primary Category) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {barData.length > 0 && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
                         <CardTitle className="text-lg font-bold text-gray-800">Distribution: {primaryCat}</CardTitle>
-                        <CardDescription>Top occurring categories</CardDescription>
+                        <CardDescription>Top five non-missing categories; other categories are not displayed</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -225,13 +209,13 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
+                </Card>}
 
                 {/* Chart 2: Pie Chart (Primary Category) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {pieData.length > 0 && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
-                        <CardTitle className="text-lg font-bold text-gray-800">Segment Composition</CardTitle>
-                        <CardDescription>{primaryCat} breakdown</CardDescription>
+                        <CardTitle className="text-lg font-bold text-gray-800">Displayed category composition</CardTitle>
+                        <CardDescription>Top five non-missing {primaryCat} categories only; shares are not whole-dataset shares</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -254,13 +238,13 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </PieChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
+                </Card>}
 
                 {/* Chart 3: Area Chart (Trend) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {primaryNum && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
-                        <CardTitle className="text-lg font-bold text-gray-800">Trend Analysis: {primaryNum}</CardTitle>
-                        <CardDescription>Value progression over records/time</CardDescription>
+                        <CardTitle className="text-lg font-bold text-gray-800">Record preview: {primaryNum}</CardTitle>
+                        <CardDescription>First {preview.length} of {total_rows} rows in file order; not a time trend</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -279,13 +263,13 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </AreaChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
+                </Card>}
 
                 {/* Chart 4: Scatter Plot (Num1 vs Num2) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {scatterData.length > 0 && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
-                        <CardTitle className="text-lg font-bold text-gray-800">Correlation Analysis</CardTitle>
-                        <CardDescription>{primaryNum} vs {secondaryNum}</CardDescription>
+                        <CardTitle className="text-lg font-bold text-gray-800">Numeric relationship</CardTitle>
+                        <CardDescription>{primaryNum} vs {secondaryNum}; complete pairs in the first {preview.length} rows</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -302,51 +286,10 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </ScatterChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
-
-                {/* Chart 5: Radar Chart (Numeric Means) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
-                    <CardHeader className="bg-gray-50 border-b border-gray-100">
-                        <CardTitle className="text-lg font-bold text-gray-800">Metric Comparison</CardTitle>
-                        <CardDescription>Structural & Value Balance</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6 h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                                <PolarGrid stroke="#e5e7eb" />
-                                <PolarAngleAxis dataKey="subject" tick={{ fill: '#6b7280', fontSize: 11 }} />
-                                <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={false} axisLine={false} />
-                                <Radar name="Metrics" dataKey="A" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.5} />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
-                {/* Chart 6: Composed Chart (Multi-Metric) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
-                    <CardHeader className="bg-gray-50 border-b border-gray-100">
-                        <CardTitle className="text-lg font-bold text-gray-800">Multi-Metric Overview</CardTitle>
-                        <CardDescription>{primaryNum} (Bar) vs {secondaryNum} (Line)</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6 h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={trendData}>
-                                <CartesianGrid stroke="#f5f5f5" />
-                                <XAxis dataKey="index" scale="band" />
-                                <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                                <YAxis yAxisId="right" orientation="right" stroke="#ff7300" />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                                <Legend />
-                                <Bar yAxisId="left" dataKey={primaryNum} barSize={20} fill="#413ea0" />
-                                <Line yAxisId="right" type="monotone" dataKey={secondaryNum} stroke="#ff7300" />
-                            </ComposedChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
+                </Card>}
 
                 {/* Chart 7: Horizontal Bar (Secondary Category) */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {horizBarData.length > 0 && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
                         <CardTitle className="text-lg font-bold text-gray-800">Secondary Distribution: {secondaryCat}</CardTitle>
                         <CardDescription>Breakdown by {secondaryCat}</CardDescription>
@@ -366,13 +309,13 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
+                </Card>}
 
                 {/* Chart 8: Radial Bar Chart (Tertiary Category) - NEW */}
-                <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
+                {radialData.length > 0 && <Card className="shadow-lg border-0 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow">
                     <CardHeader className="bg-gray-50 border-b border-gray-100">
                         <CardTitle className="text-lg font-bold text-gray-800">Tertiary Segments: {tertiaryCat}</CardTitle>
-                        <CardDescription>Radial view of top 5 segments</CardDescription>
+                        <CardDescription>Top five non-missing categories only</CardDescription>
                     </CardHeader>
                     <CardContent className="p-6 h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -387,7 +330,7 @@ const AutomatedDashboard: React.FC<AutomatedDashboardProps> = ({ summary, previe
                             </RadialBarChart>
                         </ResponsiveContainer>
                     </CardContent>
-                </Card>
+                </Card>}
 
             </div>
         </div>

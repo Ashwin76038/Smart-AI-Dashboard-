@@ -5,6 +5,25 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'backend'))
 from cleaning import clean_data
 from safe_query import execute_plan
 class AnalyticsTests(unittest.TestCase):
+ def test_upload_formats_and_invalid_workbook(self):
+  import app,io,tempfile,zipfile
+  from unittest.mock import patch
+  excel=io.BytesIO();pd.DataFrame({'amount':[3,7]}).to_excel(excel,index=False)
+  malformed=io.BytesIO()
+  with zipfile.ZipFile(malformed,'w') as archive:archive.writestr('unrelated.txt','not a workbook')
+  with tempfile.TemporaryDirectory() as tmp,patch.object(app,'UPLOAD_FOLDER',tmp):
+   client=app.app.test_client()
+   for filename,payload in [('sample.json',b'[{"amount":3},{"amount":7}]'),('sample.xlsx',excel.getvalue())]:
+    reply=client.post('/clean_data',data={'file':(io.BytesIO(payload),filename)})
+    self.assertEqual(reply.status_code,200,reply.get_data(as_text=True))
+    self.assertEqual(reply.json['summary']['total_rows'],2)
+    result=client.post('/nlp_query',json={'filename':reply.json['original_filename'],'plan':{'operation':'sum','field':'amount'}})
+    self.assertEqual(result.json['result'],[{'amount':10}])
+    charts=client.post('/generate_insight_chart',json={'filename':reply.json['original_filename']})
+    self.assertEqual(charts.status_code,200);self.assertTrue(charts.json['specs'])
+   reply=client.post('/clean_data',data={'file':(io.BytesIO(malformed.getvalue()),'invalid.xlsx')})
+   self.assertEqual(reply.status_code,400)
+   self.assertIsInstance(reply.json['error'],str)
  def test_unavailable_sum_stays_missing(self):
   d=pd.DataFrame({'group':['a','a'],'value':[float('nan'),float('nan')]})
   for plan in [{'operation':'sum','field':'value'}, {'operation':'sum','field':'value','group_by':'group'}]:
