@@ -206,6 +206,8 @@ def clean_uploaded_data():
         if ext==".xlsx":
             with zipfile.ZipFile(raw_path) as archive:
                 if sum(i.file_size for i in archive.infolist())>50*1024*1024: raise ValueError("Expanded workbook exceeds 50 MB")
+                if not {'[Content_Types].xml', 'xl/workbook.xml'}.issubset(archive.namelist()):
+                    raise ValueError("The uploaded file is not an XLSX workbook")
         df=load_dataset(str(raw_path))
         cleaned,summary=clean_data(df)
         name=identifier+".csv"
