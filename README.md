@@ -2,7 +2,15 @@
 
 A local React and Flask analytics prototype that turns an uploaded table into field profiles, chart suggestions and constrained analytical queries. It demonstrates data preparation, API design and visualization logic; chart recommendations are deterministic, with optional model-assisted query translation.
 
-## What is implemented
+## Contents
+
+[About](#about) · [Features](#features) · [Technology](#technology) · [Architecture](#architecture) · [Project structure](#project-structure) · [Getting started](#getting-started) · [Usage and analytical behavior](#usage-and-analytical-behavior) · [Configuration](#configuration) · [Testing](#testing) · [Security and limitations](#security-and-limitations) · [Contributing](#contributing) · [Next steps](#next-steps) · [License](#license) · [Acknowledgements](#acknowledgements) · [Author](#author)
+
+## About
+
+This prototype supports local exploration of uploaded tabular data: inspect quality, compare fields and run bounded analytical operations. It combines a React interface with a Flask API; optional model translation is separate from deterministic chart generation.
+
+## Features
 
 1. Upload CSV, XLSX or JSON within a 10 MB request limit.
 2. Normalize column names and reject empty tables or tables above 50,000 rows / 200 columns.
@@ -12,15 +20,11 @@ A local React and Flask analytics prototype that turns an uploaded table into fi
 
 The UI login is a demonstration, not production authentication. No accepted current screenshot is included, so the setup below is the entry point for reviewing the application.
 
-## Analytical behavior
+## Technology
 
-`backend/safe_query.py` executes a closed set of `count`, `preview`, `sum`, `mean`, `min` and `max` operations. Numeric operations validate the selected field and optional grouping column; generated Python is never executed. All-missing sums remain missing instead of becoming zero.
+React and TypeScript provide the interface; Flask handles uploads and queries; pandas prepares and profiles tables; Vega-Lite and Graphic Walker render visualizations.
 
-For example, values 2, 3 and 5 in groups A, A and B produce grouped sums of A=5 and B=5. This is a representative test case, not a business-impact claim. Offline chat supports `count rows` and `preview`; other questions require a structured plan or optional model translation. Query responses show at most 20 result rows and disclose the full result-row count.
-
-Category counts and means use the full dataset. Histograms and scatter plots use the first 100 rows, so they may not represent the full distribution. The full-data endpoint returns at most 10,000 rows; Explorer caps at 50,000. Chart captions and metadata disclose sampling scope.
-
-## Architecture and source map
+## Architecture
 
 ```text
 React / TypeScript interface
@@ -29,6 +33,8 @@ React / TypeScript interface
     -> deterministic chart specifications / validated query operations
     -> Vega-Lite and Graphic Walker views
 ```
+
+## Project structure
 
 | Location | Responsibility |
 |---|---|
@@ -39,7 +45,7 @@ React / TypeScript interface
 | `backend/services/` | Field profiling and recommendation components |
 | `tests/test_analytics.py` | Preparation, query, chart-population and API checks |
 
-## Run locally
+## Getting started
 
 Run the frontend from the repository root:
 
@@ -58,7 +64,19 @@ python app.py
 
 Open `http://localhost:8080` (or the port Vite reports). The API listens on `127.0.0.1:5000`. Use approved demonstration data. Optional configuration is documented in `backend/.env.example`; external AI is disabled by default.
 
-## Checks
+## Usage and analytical behavior
+
+`backend/safe_query.py` executes a closed set of `count`, `preview`, `sum`, `mean`, `min` and `max` operations. Numeric operations validate the selected field and optional grouping column; generated Python is never executed. All-missing sums remain missing instead of becoming zero.
+
+For example, values 2, 3 and 5 in groups A, A and B produce grouped sums of A=5 and B=5. This is a representative test case, not a business-impact claim. Offline chat supports `count rows` and `preview`; other questions require a structured plan or optional model translation. Query responses show at most 20 result rows and disclose the full result-row count.
+
+Category counts and means use the full dataset. Histograms and scatter plots use the first 100 rows, so they may not represent the full distribution. The full-data endpoint returns at most 10,000 rows; Explorer caps at 50,000. Chart captions and metadata disclose sampling scope.
+
+## Configuration
+
+See `backend/.env.example` for optional settings. External AI is disabled by default. Enabling it requires a privately configured provider key; never commit credentials. Upload size and table limits are enforced by the API.
+
+## Testing
 
 From the repository root:
 
@@ -70,11 +88,27 @@ npm run lint
 
 On 26 November 2026, all six Python tests passed against the reviewed source, covering conservative cleaning, empty input, column collisions, chart populations, closed query operations and basic upload/path handling. The frontend build, linter and browser journey were not rerun for this documentation update. Frontend upload validation, chart corrections and dependency remediation in an unmerged PR are not part of the default-branch behavior described here.
 
-## Privacy, security and limitations
+## Security and limitations
 
 Uploads receive random server identifiers and persist as local CSVs under `backend/uploads` until removed. Missing values and duplicates are preserved for domain-specific decisions. There is no tenant isolation or production authentication; do not expose the prototype as a shared service.
 
 Setting `ENABLE_EXTERNAL_AI=true` with a Gemini key allows dataset schema and analytical questions to leave the local machine for that provider. The optional integration uses a deprecated SDK and has not been externally validated. Keep it disabled until migrated and tested. Dependency findings and unmerged fixes require review before wider deployment. Chart cross-filtering, browser failure cases and clean-environment setup are not established by the Python unit tests.
+
+## Contributing
+
+Open an issue describing the problem and reproduction steps, then propose a focused pull request. Include relevant Python tests and frontend build/lint results. Use non-sensitive fixtures and preserve existing data-quality and query-validation behavior.
+
+## Next steps
+
+Outstanding work includes reviewing dependency remediation, replacing the deprecated optional AI SDK and validating the browser upload-to-chart journey. These are follow-up tasks, not implemented capabilities.
+
+## License
+
+No root license file was found in the reviewed source. A reuse license has not been added by this documentation change.
+
+## Acknowledgements
+
+The application uses the open-source libraries listed above and in its dependency manifests. Their attribution and licensing requirements remain applicable.
 
 ## Author
 
